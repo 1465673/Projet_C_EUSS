@@ -317,7 +317,8 @@ int main(int argc, char **argv)
 					comptador++;
 			parsing(root);
 			}
-
+			printf("\n");
+			printf("comptador : %d",comptador);
 			sleep(1);
 			sprintf(missatge,"AS131Z");
 
