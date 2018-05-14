@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 		case 'R':
 			/*reset maxi et mini*/
 			maximum = -9999.0;
-			minimum = -9999.0;
+			minimum = 9999.0;
 			strcpy(mess, "AR0Z");
 			break;
 		case 'B':
