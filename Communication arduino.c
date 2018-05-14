@@ -85,6 +85,78 @@ void TancarSerie(fd)
 	tcsetattr(fd,TCSANOW,&oldtio);
 	close(fd);
 }
+
+/* define the structure of an element for the list */
+typedef struct _e {
+
+    int val;            /* données quelconques - ici un entier */
+    struct _e* prec;    /* pointeur sur l'élément précédent */
+    struct _e* next;    /* pointeur sur l'élément suivant */
+
+} chained_list;
+
+/* create the list with just the root */
+chained_list* creeListe () {
+
+    chained_list* root = malloc ( sizeof *root );
+    if ( root != NULL )  /* si la racine a été correctement allouée */
+    {
+        /* pour l'instant, la liste est vide, 
+           donc 'prec' et 'suiv' pointent vers la racine elle-même */
+        root->prec = root;
+        root->next = root;
+    }
+    return root;
+}
+
+/* parse the list and print the val */
+void parsing (chained_list* root) {
+
+	chained_list* it;
+	for ( it = root->next; it != root; it = it->next ) {
+	    printf("%d, ", it->val);
+	}
+}
+
+/* add an element before an other one */
+void ajouterAvant (chained_list* element, int val) {
+    chained_list* nouvel_element = malloc ( sizeof *nouvel_element );
+    if ( nouvel_element != NULL ) {
+        nouvel_element->val = val;
+        /* on définit les pointeurs du nouvel élément */
+        nouvel_element->prec = element->prec;
+        nouvel_element->next = element;
+        /* on modifie les éléments de la liste */
+        element->prec->next = nouvel_element;
+        element->prec = nouvel_element;
+    }
+}
+
+/* add an element after an other one */
+void ajouterApres (chained_list* element, int val) {
+    chained_list* nouvel_element = malloc ( sizeof *nouvel_element );
+    if ( nouvel_element != NULL ) {
+        nouvel_element->val = val;
+        /* on définit les pointeurs du nouvel élément */
+        nouvel_element->prec = element;
+        nouvel_element->next = element->next;
+        /* on modifie les éléments de la liste */
+        element->next->prec = nouvel_element;
+        element->next = nouvel_element;
+    }
+}
+
+/* add an element at the first place */
+void ajouterEnTete (chained_list* racine, int val) {
+    ajouterApres (racine, val);
+}
+
+/* add an element at the last place */
+void ajouterEnQueue (chained_list* racine, int val) {
+    ajouterAvant (racine, val);
+}
+
+
                                                                                  
 int main(int argc, char **argv)                                                               
 {                                                                          
@@ -101,6 +173,7 @@ int main(int argc, char **argv)
 	int min;
 	int max;
 	char subbuf[10];
+	chained_list* currentElem;
 
 	
 
@@ -130,7 +203,7 @@ int main(int argc, char **argv)
 
 	if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 
-	printf("Enviats %d bytes: ",res);
+	printf("Sent %d bytes: ",res);
 	for (i = 0; i < res; i++)
 	{
 		printf("%c",missatge[i]);
@@ -165,7 +238,7 @@ int main(int argc, char **argv)
 		}*/
 	}
 
-	printf("Rebuts %d bytes: ",res);
+	printf("Received %d bytes: ",res);
 	for (i = 0; i <= 4; i++)
 	{
 		printf("%c",buf[i]);
