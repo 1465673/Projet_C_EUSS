@@ -7,6 +7,7 @@
 
 float tabtemperature[100];
 int i = 0;
+int nb;
 int n;
 int counter = 0; //to know how many temperature we have put in the array
 float avg = 0.00;
@@ -20,7 +21,6 @@ void setup() {
   // put your setup code here, to run once:
 
   Serial.begin(9600);
-
   // initialize Timer1
   cli(); // disable global interrupts
   TCCR1A = 0; // set entire TCCR1A register to 0
@@ -57,6 +57,7 @@ ISR(TIMER1_COMPA_vect) {
       //generate temperature between 0.0 and 30.0
       tabtemperature[i] = random(0.0, 30.0);
 
+      
       //if the array is full we go back to the begin
       if (i == 99) {
         i = 0;
@@ -70,10 +71,10 @@ ISR(TIMER1_COMPA_vect) {
       }
 
       //if we have put enough data, we calculate the average
-      if (counter == n) {
-        avg = getAverage(tabtemperature, n);
-        Serial.println("avg : ");
-        Serial.println(avg);
+      if (counter == nb) {
+        avg = getAverage(tabtemperature, nb);
+        //Serial.println("avg : ");
+        //Serial.println(avg);
         counter = 0;
       }
 
@@ -107,9 +108,9 @@ void loop() {
   char order = buffer[1]; //to take the order from the message
   if (buffer != NULL) {
 
-    Serial.print("I received something: ");
-    Serial.println("message : ");
-    Serial.println(buffer);
+    //Serial.print("I received something: ");
+    //Serial.println("message : ");
+    //Serial.println(buffer);
 
 
     char ch = 'A';
@@ -184,7 +185,7 @@ void loop() {
       break;
 
     case 'C':
-
+      
       //if there is an error with the protocol
       if (buffer[0] != 'A' || buffer[2] != 'Z') {
         strcpy(mess, "AC1Z");
@@ -206,11 +207,10 @@ void loop() {
         strcat(mess, subbuf);
         strcat(mess, "Z");
       }
-
       break;
 
     case 'M':
-
+      
       //to get the differents datas from the message
       memcpy(subbuf, &buffer[2], 1); //to take the valor of the code V
       subbuf[1] = '\0';
@@ -232,11 +232,11 @@ void loop() {
     tiempo = atoi(subbuf2);
     seconds = 0;
 
-          Serial.print("Acquisition started with an interval in seconds of : ");
-          Serial.println(subbuf2);
-          Serial.print("We calculate median with a number of data of : ");
-          Serial.println(subbuf3);
-          n = atoi(subbuf3);
+          //Serial.print("Acquisition started with an interval in seconds of : ");
+          //Serial.println(subbuf2);
+          //Serial.print("We calculate median with a number of data of : ");
+          //Serial.println(subbuf3);
+          nb = atoi(subbuf3);
           strcpy(acquisition, "start");
           start = true;
           strcpy(mess, "AM0Z");
@@ -256,17 +256,17 @@ void loop() {
         strcpy(mess, "AM2Z");
       }
 
-      Serial.print("acquisition is now = ");
-      Serial.println(acquisition);
+      //Serial.print("acquisition is now = ");
+      //Serial.println(acquisition);
       break;
 
     default:
-      Serial.println("invalid order \n");
+      //Serial.println("invalid order \n");
       strcpy(mess, "AD1Z");
     }
 
     //print the answer
-    Serial.print("mess : ");
+    //Serial.print("mess : ");
     Serial.println(mess);
 
   }
@@ -326,5 +326,6 @@ float getAverage(float *tab, int n) {
   }
 
   ret = sum / count;
+
   return ret;
 }
