@@ -47,7 +47,8 @@
 #define _POSIX_SOURCE 1 /* POSIX compliant source */                       
                                                            
 struct termios oldtio,newtio;                                            
-
+	double min = 99.0;
+	double max = -9.0;
 
 int	ConfigurarSerie(void)
 {
@@ -86,10 +87,11 @@ void TancarSerie(fd)
 	close(fd);
 }
 
+
 /* define the structure of an element for the list */
 typedef struct _e {
 
-    int val;            /* données quelconques - ici un entier */
+    double val;            /* données quelconques - ici un entier */
     struct _e* prec;    /* pointeur sur l'élément précédent */
     struct _e* next;    /* pointeur sur l'élément suivant */
 
@@ -114,12 +116,12 @@ void parsing (chained_list* root) {
 
 	chained_list* it;
 	for ( it = root->next; it != root; it = it->next ) {
-	    printf("%d, ", it->val);
+	    printf("%f, ", it->val);
 	}
 }
 
 /* add an element before an other one */
-void ajouterAvant (chained_list* element, int val) {
+void ajouterAvant (chained_list* element, double val) {
     chained_list* nouvel_element = malloc ( sizeof *nouvel_element );
     if ( nouvel_element != NULL ) {
         nouvel_element->val = val;
@@ -133,7 +135,7 @@ void ajouterAvant (chained_list* element, int val) {
 }
 
 /* add an element after an other one */
-void ajouterApres (chained_list* element, int val) {
+void ajouterApres (chained_list* element, double val) {
     chained_list* nouvel_element = malloc ( sizeof *nouvel_element );
     if ( nouvel_element != NULL ) {
         nouvel_element->val = val;
@@ -147,16 +149,14 @@ void ajouterApres (chained_list* element, int val) {
 }
 
 /* add an element at the first place */
-void ajouterEnTete (chained_list* racine, int val) {
+void ajouterEnTete (chained_list* racine, double val) {
     ajouterApres (racine, val);
 }
 
 /* add an element at the last place */
-void ajouterEnQueue (chained_list* racine, int val) {
+void ajouterEnQueue (chained_list* racine, double val) {
     ajouterAvant (racine, val);
 }
-
-
                                                                                  
 int main(int argc, char **argv)                                                               
 {                                                                          
@@ -169,12 +169,11 @@ int main(int argc, char **argv)
 	char nbmeasureschar[2];
 	int timetowait;
 	int bytes;
-	int comptador;
-	int min;
-	int max;
+	int comptador = 0;
+
 	char subbuf[10];
 	chained_list* currentElem;
-
+	chained_list* root;
 	
 
 	printf("Enter time : ");
@@ -189,8 +188,6 @@ int main(int argc, char **argv)
 	printf("%d \n", timetowait);
 	
 	
-
-	// Enviar el missatge 1
 	sprintf(missatge,"AM1");
 	strcat(missatge, timechar);
 	strcat(missatge, nbmeasureschar);
@@ -203,151 +200,206 @@ int main(int argc, char **argv)
 
 	if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 
-	printf("Sent %d bytes: ",res);
+	printf("Enviats %d bytes: ",res);
 	for (i = 0; i < res; i++)
 	{
 		printf("%c",missatge[i]);
 	}
 	printf("\n");
-	sleep(1);
+	
 
 	i = 0;
 	int trigger = 0;
 	int end = 0;
 	res = 0;
-		printf("avant while 1");
-	ioctl(fd, FIONREAD, &bytes);
-	printf("avant while");
-	printf("bytes : %d",bytes);
-	while(bytes == 0 && end == 0){
-		printf("rentré while ");
-		res = res + read(fd,buf+i,1);
-		//printf("buf %s \n",buf[i]);
-		
-		/*if(buf[i]=='A'|| trigger ==1){
-			printf("rentré if 1");
-			i++;
-			trigger =1;
-			res++;
-			if(buf[i]=='Z'){
-				printf("rentré if 2");
+
+	while(end == 0){
+		ioctl(fd, FIONREAD, &bytes);
+
+		if(bytes >= 0 && end == 0){
+			res = res + read(fd,buf+i,1);
+
+			if(buf[i]=='A'|| trigger ==1){
 				i++;
-				buf[i]='\0';
-				end = 1;
-			}		
-		}*/
+				trigger = 1;
+				res++;
+				
+				if(buf[i-1] == 'Z'){
+					i++;
+					buf[i] = '\0';
+					end = 1;
+				}		
+			}
+		}
+		
 	}
-
-	printf("Received %d bytes: ",res);
-	for (i = 0; i <= 4; i++)
-	{
-		printf("%c",buf[i]);
-	}
-
-
-	/*printf("bytes en attente %d",bytes);
-	for (i = 0; i<bytes ;i++){
-		res = res + read(fd,buf+i,1);
-	}
-
 	
 	printf("Rebuts %d bytes: ",res);
-	for (i = 0; i < res; i++)
+	for (i = 0; i <= res; i++)
 	{
 		printf("%c",buf[i]);
 	}
-	printf("\n");
-*/
+	memset(buf,'\0',sizeof(buf));
+
+
+
 	
-	/*while(1==1){
+	while(1==1){
 
 			sleep(timetowait);
-
-      		double media;
+      		float media;
       		sprintf(missatge,"ACZ");
-			
-      		//fd = ConfigurarSerie();
 			res = write(fd,missatge,strlen(missatge));
-
 			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
-
-			//fd = ConfigurarSerie();	
-			//res = read(fd,buf,4);
-			//res = res + read(fd,buf+4,4);
-			res = read(fd,buf,1);
-			res = res + read(fd,buf+1,1);
-			res = res + read(fd,buf+2,1);
-			res = res + read(fd,buf+3,1);
-			res = res + read(fd,buf+4,1);
-			res = res + read(fd,buf+5,1);
-			res = res + read(fd,buf+6,1);
-			res = res + read(fd,buf+7,1);
 			
+			i = 0;
+			trigger = 0;
+			end = 0;
+			res = 0;
+			memset(buf3,'\0',sizeof(buf3));
+			while(end == 0){
+				ioctl(fd, FIONREAD, &bytes);
 
-			printf("Rebuts %d bytes: ",res);
-			for (i = 0; i < res; i++)
-			{
-				printf("%c", buf[i]);
+				if(bytes >= 0 && end == 0){
+					res = res + read(fd,buf3+i,1);
+
+					if(buf3[i]=='A'|| trigger ==1){
+						i++;
+						trigger = 1;
+						res++;
+						
+						if(buf3[i-1] == 'Z'){
+							i++;
+							buf3[i] = '\0';
+							end = 1;
+						}		
+					}
+				}
+				
 			}
 			printf("\n");
-			memcpy(subbuf, &buf[3], 4); //to take the valor of the code V
+			printf("ACZ Rebuts %d bytes: ",res);
+			for (i = 0; i < res; i++)
+			{
+				printf("%c", buf3[i]);
+			}
+
+			printf("\n");
+			memcpy(subbuf, &buf3[3], 4); //to take the valor of the code V
       		subbuf[4] = '\0';
       		media = atof(subbuf);
-      		printf("Media : %1.f \n",media );
+      		printf("Media : %f \n",media );
+      		memset(buf3,'\0',sizeof(buf3));
 
-
-
+      		double valeur = media;
+			if (valeur > max) max = valeur;
+			if (valeur < min) min = valeur;
+			printf("Min : %f\n",min);
+			printf("Max : %f\n",max);
 			
       		
-			if (media >=0 && media <=30)
-			{
-			comptador++;
-			//fd = ConfigurarSerie();	
+			if (valeur >=0.0 && valeur <=30.0){
+				if (root == NULL){
+					root = creeListe();
+					currentElem = root;
+				}				
+				if (comptador>= 3600){
+					if(currentElem == root){
+						currentElem = root->next;
+					}
+					currentElem->val = valeur;
+					currentElem = currentElem->next;
+				}
+				else{
+					ajouterEnTete(currentElem,valeur);
+					currentElem = currentElem->next;
+				}
+					comptador++;
+			parsing(root);
+			}
+
+			sleep(1);
 			sprintf(missatge,"AS131Z");
 
 			res = write(fd,missatge,strlen(missatge));
-
 			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 	
-			
-			//res = read(fd,buf2,4);
-			
-			res = read(fd,buf2,1);
-			res = res + read(fd,buf2+1,1);
-			res = res + read(fd,buf2+2,1);
-			res = res + read(fd,buf2+3,1);
+			i = 0;
+			trigger = 0;
+			end = 0;
+			res = 0;
+
+			while(end == 0){
+				ioctl(fd, FIONREAD, &bytes);
+				if(bytes >= 0 && end == 0){
+					res = res + read(fd,buf2+i,1);
+
+					if(buf2[i]=='A'|| trigger ==1){
+						i++;
+						trigger = 1;
+						res++;
+						
+						if(buf2[i-1] == 'Z'){
+							i++;
+							buf2[i] = '\0';
+							end = 1;
+						}		
+					}
+				}
+				
+			}
+			printf("\n");
 
 			for (i = 0; i < res; i++)
 			{
-				printf("on %c\n", buf2[i]);
+				printf("%c", buf2[i]);
 			}
+			printf("\n");
+			memset(buf2,'\0',sizeof(buf2));
 
-
-			
 			sprintf(missatge,"AS130Z");
 
 			res = write(fd,missatge,strlen(missatge));
 			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 			
-			//res = read(fd,buf3,4);
 			
-			res = read(fd,buf3,1);
-			res = res + read(fd,buf3+1,1);
-			res = res + read(fd,buf3+2,1);
-			res = res + read(fd,buf3+3,1);
+			i = 0;
+			trigger = 0;
+			end = 0;
+			res = 0;
+
+			while(end == 0){
+				ioctl(fd, FIONREAD, &bytes);
+
+				if(bytes >= 0 && end == 0){
+					res = res + read(fd,buf2+i,1);
+
+					if(buf2[i]=='A'|| trigger ==1){
+						i++;
+						trigger = 1;
+						res++;
+						
+						if(buf2[i-1] == 'Z'){
+							i++;
+							buf2[i] = '\0';
+							end = 1;
+						}		
+					}
+				}
+				
+			}
+
 
 			for (i = 0; i < res; i++)
 			{
-				printf("off %c\n", buf3[i]);
+				printf("%c", buf2[i]);
 			}
-
-
+			printf("\n");
+			memset(buf2,'\0',sizeof(buf2));
+			sleep(1);
+			
 			}
-
-
-      	}*/
-
-                                                                   
+                                                   
 	TancarSerie(fd);
 	
 	return 0;
