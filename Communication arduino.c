@@ -47,8 +47,8 @@
 #define _POSIX_SOURCE 1 /* POSIX compliant source */                       
                                                            
 struct termios oldtio,newtio;                                            
-	double min = 99.0;
-	double max = -9.0;
+double min = 99.0;
+double max = -9.0;
 
 int	ConfigurarSerie(void)
 {
@@ -87,6 +87,35 @@ void TancarSerie(fd)
 	close(fd);
 }
 
+
+char* fonction (int *fd, int *res, char buf2[], int *bytes) {
+	int i = 0;
+	int trigger = 0;
+	int end = 0;
+	res = 0;
+
+	while(end == 0){
+		ioctl(fd, FIONREAD, &bytes);
+		if(bytes >= 0 && end == 0){
+			res = res + read(fd,buf2+i,1);
+			if(buf2[i]=='A'|| trigger ==1){
+				i++;
+				trigger = 1;
+				res++;
+				
+				if(buf2[i-1] == 'Z'){
+					i++;
+					buf2[i] = '\0';
+					end = 1;
+				}		
+			}
+		}
+		
+	}
+	printf("\n");
+
+	return buf2;
+}
 
 /* define the structure of an element for the list */
 typedef struct _e {
@@ -159,7 +188,8 @@ void addLast (chained_list* root, double val) {
                                                                                  
 int main(int argc, char **argv)                                                               
 {                                                                          
-	int fd, i = 0, res;                                                           
+	int i = 0;
+	int* fd, res;                                                           
 	char buf[255];
 	char buf2[255];
 	char buf3[255];
@@ -167,7 +197,7 @@ int main(int argc, char **argv)
 	char timechar[2];
 	char nbmeasureschar[2];
 	int timetowait;
-	int bytes;
+	int *bytes;
 	int comptador = 0;
 
 	char subbuf[10];
@@ -251,7 +281,9 @@ int main(int argc, char **argv)
 			res = write(fd,missatge,strlen(missatge));
 			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 			
-			i = 0;
+
+			strcpy(buf2, fonction(&fd, &res, buf2 ,&bytes));
+			/*i = 0;
 			trigger = 0;
 			end = 0;
 			res = 0;
@@ -275,7 +307,7 @@ int main(int argc, char **argv)
 					}
 				}
 				
-			}
+			}*/
 			printf("\n");
 			printf("ACZ Rebuts %d bytes: ",res);
 			for (i = 0; i < res; i++)
@@ -324,7 +356,8 @@ int main(int argc, char **argv)
 			res = write(fd,missatge,strlen(missatge));
 			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 	
-			i = 0;
+			strcpy(buf2, fonction(&fd, &res, buf2, &bytes));
+			/*i = 0;
 			trigger = 0;
 			end = 0;
 			res = 0;
@@ -348,7 +381,7 @@ int main(int argc, char **argv)
 				}
 				
 			}
-			printf("\n");
+			printf("\n");*/
 
 			for (i = 0; i < res; i++)
 			{
@@ -362,8 +395,8 @@ int main(int argc, char **argv)
 			res = write(fd,missatge,strlen(missatge));
 			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 			
-			
-			i = 0;
+			strcpy(buf2, fonction(&fd, &res, buf2, &bytes));
+			/*i = 0;
 			trigger = 0;
 			end = 0;
 			res = 0;
@@ -387,7 +420,7 @@ int main(int argc, char **argv)
 					}
 				}
 				
-			}
+			}*/
 
 
 			for (i = 0; i < res; i++)
