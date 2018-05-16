@@ -91,9 +91,9 @@ void TancarSerie(fd)
 /* define the structure of an element for the list */
 typedef struct _e {
 
-    double val;            /* données quelconques - ici un entier */
-    struct _e* prec;    /* pointeur sur l'élément précédent */
-    struct _e* next;    /* pointeur sur l'élément suivant */
+    double val;          //the temperature
+    struct _e* prec;     //the pointer to the precedent element
+    struct _e* next;     //the pointer to the next element
 
 } chained_list;
 
@@ -101,10 +101,9 @@ typedef struct _e {
 chained_list* creeListe () {
 
     chained_list* root = malloc ( sizeof *root );
-    if ( root != NULL )  /* si la racine a été correctement allouée */
+    if ( root != NULL )  //verification if the list is well initialized
     {
-        /* pour l'instant, la liste est vide, 
-           donc 'prec' et 'suiv' pointent vers la racine elle-même */
+        //the list is empty, the root point to itself
         root->prec = root;
         root->next = root;
     }
@@ -121,41 +120,41 @@ void parsing (chained_list* root) {
 }
 
 /* add an element before an other one */
-void ajouterAvant (chained_list* element, double val) {
-    chained_list* nouvel_element = malloc ( sizeof *nouvel_element );
-    if ( nouvel_element != NULL ) {
-        nouvel_element->val = val;
-        /* on définit les pointeurs du nouvel élément */
-        nouvel_element->prec = element->prec;
-        nouvel_element->next = element;
-        /* on modifie les éléments de la liste */
-        element->prec->next = nouvel_element;
-        element->prec = nouvel_element;
+void addBefore (chained_list* element, double val) {
+    chained_list* newElem = malloc ( sizeof *newElem );
+    if ( newElem != NULL ) {
+        newElem->val = val;
+        //the new element is assigned is prec and next elements
+        newElem->prec = element->prec;
+        newElem->next = element;
+        //the prec elem point to the new and the same for the next
+        element->prec->next = newElem;
+        element->prec = newElem;
     }
 }
 
 /* add an element after an other one */
-void ajouterApres (chained_list* element, double val) {
-    chained_list* nouvel_element = malloc ( sizeof *nouvel_element );
-    if ( nouvel_element != NULL ) {
-        nouvel_element->val = val;
-        /* on définit les pointeurs du nouvel élément */
-        nouvel_element->prec = element;
-        nouvel_element->next = element->next;
-        /* on modifie les éléments de la liste */
-        element->next->prec = nouvel_element;
-        element->next = nouvel_element;
+void addAfter (chained_list* element, double val) {
+    chained_list* newElem = malloc ( sizeof *newElem );
+    if ( newElem != NULL ) {
+        newElem->val = val;
+        //the new element is assigned is prec and next elements
+        newElem->prec = element;
+        newElem->next = element->next;
+        //the prec elem point to the new and the same for the next
+        element->next->prec = newElem;
+        element->next = newElem;
     }
 }
 
 /* add an element at the first place */
-void ajouterEnTete (chained_list* racine, double val) {
-    ajouterApres (racine, val);
+void addFirst (chained_list* root, double val) {
+    addAfter (root, val);
 }
 
 /* add an element at the last place */
-void ajouterEnQueue (chained_list* racine, double val) {
-    ajouterAvant (racine, val);
+void addLast (chained_list* root, double val) {
+    addBefore (root, val);
 }
                                                                                  
 int main(int argc, char **argv)                                                               
@@ -311,7 +310,7 @@ int main(int argc, char **argv)
 					currentElem = currentElem->next;
 				}
 				else{
-					ajouterEnTete(currentElem,valeur);
+					addLast(root,valeur);
 					currentElem = currentElem->next;
 				}
 					comptador++;
