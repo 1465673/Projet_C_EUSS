@@ -81,7 +81,7 @@ int	ConfigurarSerie(void)
 	return fd;
 }               
 
-void TancarSerie(fd)
+void TancarSerie(int *fd)
 {
 	tcsetattr(fd,TCSANOW,&oldtio);
 	close(fd);
@@ -223,11 +223,11 @@ int main(int argc, char **argv)
 	strcat(missatge,"Z");
 	
 
-	fd = ConfigurarSerie();
+	*fd = ConfigurarSerie();
 	
-	res = write(fd,missatge,strlen(missatge));
+	res = write(*fd,missatge,strlen(missatge));
 
-	if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
+	if (res <0) {tcsetattr(*fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 
 	printf("Enviats %d bytes: ",res);
 	for (i = 0; i < res; i++)
@@ -243,10 +243,10 @@ int main(int argc, char **argv)
 	res = 0;
 
 	while(end == 0){
-		ioctl(fd, FIONREAD, &bytes);
+		ioctl(*fd, FIONREAD, &bytes);
 
-		if(bytes >= 0 && end == 0){
-			res = res + read(fd,buf+i,1);
+		if(*bytes >= 0 && end == 0){
+			res = res + read(*fd,buf+i,1);
 
 			if(buf[i]=='A'|| trigger ==1){
 				i++;
@@ -278,8 +278,8 @@ int main(int argc, char **argv)
 			sleep(timetowait);
       		float media;
       		sprintf(missatge,"ACZ");
-			res = write(fd,missatge,strlen(missatge));
-			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
+			res = write(*fd,missatge,strlen(missatge));
+			if (res <0) {tcsetattr(*fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 			
 
 			strcpy(buf2, fonction(&fd, &res, buf2 ,&bytes));
@@ -353,8 +353,8 @@ int main(int argc, char **argv)
 			sleep(1);
 			sprintf(missatge,"AS131Z");
 
-			res = write(fd,missatge,strlen(missatge));
-			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
+			res = write(*fd,missatge,strlen(missatge));
+			if (res <0) {tcsetattr(*fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 	
 			strcpy(buf2, fonction(&fd, &res, buf2, &bytes));
 			/*i = 0;
@@ -392,8 +392,8 @@ int main(int argc, char **argv)
 
 			sprintf(missatge,"AS130Z");
 
-			res = write(fd,missatge,strlen(missatge));
-			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
+			res = write(*fd,missatge,strlen(missatge));
+			if (res <0) {tcsetattr(*fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 			
 			strcpy(buf2, fonction(&fd, &res, buf2, &bytes));
 			/*i = 0;
@@ -433,7 +433,7 @@ int main(int argc, char **argv)
 			
 			}
                                                    
-	TancarSerie(fd);
+	TancarSerie(&fd);
 	
 	return 0;
 }
