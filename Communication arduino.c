@@ -1,30 +1,3 @@
-//      linux_serie_demo.c
-//
-//This document is copyrighted (c) 1997 Peter Baumann, (c) 2001 Gary Frerking
-//and is distributed under the terms of the Linux Documentation Project (LDP)
-//license, stated below.
-//
-//Unless otherwise stated, Linux HOWTO documents are copyrighted by their
-//respective authors. Linux HOWTO documents may be reproduced and distributed
-//in whole or in part, in any medium physical or electronic, as long as this
-//copyright notice is retained on all copies. Commercial redistribution is
-//allowed and encouraged; however, the author would like to be notified of any
-//such distributions.
-//
-//All translations, derivative works, or aggregate works incorporating any
-//Linux HOWTO documents must be covered under this copyright notice. That is,
-//you may not produce a derivative work from a HOWTO and impose additional
-//restrictions on its distribution. Exceptions to these rules may be granted
-//under certain conditions; please contact the Linux HOWTO coordinator at the
-//address given below.
-//
-//In short, we wish to promote dissemination of this information through as
-//many channels as possible. However, we do wish to retain copyright on the
-//HOWTO documents, and would like to be notified of any plans to redistribute
-//the HOWTOs.
-//
-//http://www.ibiblio.org/pub/Linux/docs/HOWTO/Serial-Programming-HOWTO
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -87,35 +60,6 @@ void TancarSerie(fd)
 	close(fd);
 }
 
-
-char* fonction (int *fd, int *res, char buf2[], int *bytes) {
-	int i = 0;
-	int trigger = 0;
-	int end = 0;
-	*res = 0;
-
-	while(end == 0){
-		ioctl(*fd, FIONREAD, &bytes);
-		if(*bytes >= 0 && end == 0){
-			*res = *res + read(*fd,buf2+i,1);
-			if(buf2[i]=='A'|| trigger ==1){
-				i++;
-				trigger = 1;
-				*res++;
-				
-				if(buf2[i-1] == 'Z'){
-					i++;
-					buf2[i] = '\0';
-					end = 1;
-				}		
-			}
-		}
-		
-	}
-	printf("\n");
-
-	return buf2;
-}
 
 /* define the structure of an element for the list */
 typedef struct _e {
@@ -185,11 +129,53 @@ void addFirst (chained_list* root, double val) {
 void addLast (chained_list* root, double val) {
     addBefore (root, val);
 }
+
+// permit to receipt the data from the arduino
+// return the buffer with the message
+char* fonction (int fd, char ret[]){
+	int i = 0;
+	int trigger = 0;
+	int end = 0;
+	int res = 0;
+	int bytes = 0;
+
+	memset(ret,'\0',sizeof(ret));
+	//read the message byte by byte
+	while(end == 0){
+		ioctl(fd, FIONREAD, &bytes);
+
+		if(bytes >= 0 && end == 0){
+			res = res + read(fd,ret+i,1);
+
+			if(ret[i]=='A'|| trigger ==1){
+				i++;
+				trigger = 1;
+				res++;
+						
+				if(ret[i-1] == 'Z'){
+					i++;
+					ret[i] = '\0';
+					end = 1;
+				}		
+			}
+		}
+				
+	}
+
+	//print the message
+	for (i = 0; i < res; i++) {
+		printf("%c", ret[i]);
+	}
+	
+	
+	return ret;
+}
+
+
                                                                                  
 int main(int argc, char **argv)                                                               
 {                                                                          
-	int i = 0;
-	int fd, res;                                                           
+	int fd, i = 0, res;                                                           
 	char buf[255];
 	char buf2[255];
 	char buf3[255];
@@ -201,8 +187,8 @@ int main(int argc, char **argv)
 	int comptador = 0;
 
 	char subbuf[10];
-	chained_list* currentElem;
-	chained_list* root;
+	chained_list* currentElem; //current elem of the list
+	chained_list* root; //start of the list
 	
 
 	printf("Enter time : ");
@@ -222,7 +208,6 @@ int main(int argc, char **argv)
 	strcat(missatge, nbmeasureschar);
 	strcat(missatge,"Z");
 	
-
 	fd = ConfigurarSerie();
 	
 	res = write(fd,missatge,strlen(missatge));
@@ -235,100 +220,44 @@ int main(int argc, char **argv)
 		printf("%c",missatge[i]);
 	}
 	printf("\n");
+
 	
 
-	i = 0;
-	int trigger = 0;
-	int end = 0;
-	res = 0;
-
-	while(end == 0){
-		ioctl(fd, FIONREAD, &bytes);
-
-		if(bytes >= 0 && end == 0){
-			res = res + read(fd,buf+i,1);
-
-			if(buf[i]=='A'|| trigger ==1){
-				i++;
-				trigger = 1;
-				res++;
-				
-				if(buf[i-1] == 'Z'){
-					i++;
-					buf[i] = '\0';
-					end = 1;
-				}		
-			}
-		}
-		
-	}
-	
-	printf("Rebuts %d bytes: ",res);
-	for (i = 0; i <= res; i++)
-	{
-		printf("%c",buf[i]);
-	}
+	//read the message and store it in the buffer
+	strcpy(buf2, fonction(fd, buf2));
 	memset(buf,'\0',sizeof(buf));
+	printf("\n");
 
 
 
-	
+	//loop to get the temperature
 	while(1==1){
-
-			sleep(timetowait);
+			printf("\n");
+			sleep(timetowait); //wait the number of second multiplied by the number of measures needed to do the average
       		float media;
       		sprintf(missatge,"ACZ");
 			res = write(fd,missatge,strlen(missatge));
 			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 			
-
-			strcpy(buf2, fonction(&fd, &res, buf2 ,&bytes));
-			/*i = 0;
-			trigger = 0;
-			end = 0;
-			res = 0;
-			memset(buf3,'\0',sizeof(buf3));
-			while(end == 0){
-				ioctl(fd, FIONREAD, &bytes);
-
-				if(bytes >= 0 && end == 0){
-					res = res + read(fd,buf3+i,1);
-
-					if(buf3[i]=='A'|| trigger ==1){
-						i++;
-						trigger = 1;
-						res++;
-						
-						if(buf3[i-1] == 'Z'){
-							i++;
-							buf3[i] = '\0';
-							end = 1;
-						}		
-					}
-				}
-				
-			}*/
-			printf("\n");
-			printf("ACZ Rebuts %d bytes: ",res);
-			for (i = 0; i < res; i++)
-			{
-				printf("%c", buf3[i]);
-			}
-
-			printf("\n");
+			//get one example of temperature
+			strcpy(buf3, fonction(fd, buf3));
 			memcpy(subbuf, &buf3[3], 4); //to take the valor of the code V
       		subbuf[4] = '\0';
       		media = atof(subbuf);
-      		printf("Media : %f \n",media );
+      		printf("\n");
+      		printf("Media : %f \n",media ); //print the temperature
       		memset(buf3,'\0',sizeof(buf3));
 
+      		//assign the min and max
       		double valeur = media;
 			if (valeur > max) max = valeur;
 			if (valeur < min) min = valeur;
 			printf("Min : %f\n",min);
 			printf("Max : %f\n",max);
 			
-      		
+      		//create the list if none
+      		//create the new elements and put them on the right place
+      		//change the valor of elements if we already have 3600 elements
 			if (valeur >=0.0 && valeur <=30.0){
 				if (root == NULL){
 					root = creeListe();
@@ -346,61 +275,41 @@ int main(int argc, char **argv)
 					currentElem = currentElem->next;
 				}
 					comptador++;
+			//print the whole list
 			parsing(root);
 			}
+
 			printf("\n");
+			//the counter of element in the list
 			printf("comptador : %d",comptador);
-			sleep(1);
-			sprintf(missatge,"AS131Z");
-
-			res = write(fd,missatge,strlen(missatge));
-			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
-	
-			strcpy(buf2, fonction(&fd, &res, buf2, &bytes));
-			/*i = 0;
-			trigger = 0;
-			end = 0;
-			res = 0;
-
-			while(end == 0){
-				ioctl(fd, FIONREAD, &bytes);
-				if(bytes >= 0 && end == 0){
-					res = res + read(fd,buf2+i,1);
-
-					if(buf2[i]=='A'|| trigger ==1){
-						i++;
-						trigger = 1;
-						res++;
-						
-						if(buf2[i-1] == 'Z'){
-							i++;
-							buf2[i] = '\0';
-							end = 1;
-						}		
-					}
-				}
-				
-			}
-			printf("\n");*/
-
-			for (i = 0; i < res; i++)
-			{
-				printf("%c", buf2[i]);
-			}
 			printf("\n");
-			memset(buf2,'\0',sizeof(buf2));
+			sleep(1);
 
-			sprintf(missatge,"AS130Z");
 
+
+			sprintf(missatge,"AS131Z");
+			//send message to the LED to switch it on
 			res = write(fd,missatge,strlen(missatge));
 			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 			
-			strcpy(buf2, fonction(&fd, &res, buf2, &bytes));
-			/*i = 0;
-			trigger = 0;
-			end = 0;
+			//read the returned code by the LED
+			strcpy(buf2, fonction(fd, buf2));
+			printf("\n");
+			memset(buf2,'\0',sizeof(buf2));
+
+
+
+			sprintf(missatge,"AS130Z");
+			//turn the LED OFF
+			res = write(fd,missatge,strlen(missatge));
+			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
+			
+			i = 0;
+			int trigger = 0;
+			int end = 0;
 			res = 0;
 
+			//read the returned code by the LED
 			while(end == 0){
 				ioctl(fd, FIONREAD, &bytes);
 
@@ -420,7 +329,7 @@ int main(int argc, char **argv)
 					}
 				}
 				
-			}*/
+			}
 
 
 			for (i = 0; i < res; i++)
@@ -437,4 +346,3 @@ int main(int argc, char **argv)
 	
 	return 0;
 }
-
