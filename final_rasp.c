@@ -343,7 +343,7 @@ int mainArduino()
 			//the counter of element in the list
 			printf("comptador : %d",comptador);
 			printf("\n");
-			sleep(1);
+			//sleep(1);
 
 
 
@@ -398,7 +398,7 @@ int mainArduino()
 			}
 			printf("\n");
 			memset(buf2,'\0',sizeof(buf2));
-			sleep(1);
+			//sleep(1);
 		}
 		else {
 			sleep(1);
