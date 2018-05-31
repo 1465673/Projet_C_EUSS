@@ -39,6 +39,7 @@ int start = 0;
 int res;
 int timetowait;
 int fd;
+pthread_mutex_t mutex_media;
 
 int	ConfigurarSerie(void)
 {
@@ -289,14 +290,20 @@ int mainArduino()
 			sleep(timetowait); //wait the number of second multiplied by the number of measures needed to do the average
       		//float media;
       		sprintf(missatge,"ACZ");
-			res = write(fd,missatge,strlen(missatge));
+			res = write(fd,missatge,strlen(missatge)); 
 			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 			
 			//get one example of temperature
 			strcpy(buf3, fonction(fd, buf3));
 			memcpy(subbuf, &buf3[3], 4); //to take the valor of the code V
       		subbuf[4] = '\0';
+
+      		pthread_mutex_lock(&mutex_media);
+
       		media = atof(subbuf);
+
+      		pthread_mutex_unlock(&mutex_media);
+
       		printf("\n");
       		printf("Media : %f \n",media ); //print the temperature
       		memset(buf3,'\0',sizeof(buf3));
@@ -341,7 +348,7 @@ int mainArduino()
 
 
 			sprintf(missatge,"AS131Z");
-			//send message to the LED to switch it on
+			//turn the LED ON
 			res = write(fd,missatge,strlen(missatge));
 			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
 			
@@ -483,11 +490,16 @@ int mainClient() {
 		case 'U':
 			memset(buffer, '\0', sizeof(buffer));
 			memset(missatge, '\0', sizeof(missatge));
-						
+			
+			pthread_mutex_lock(&mutex_media);
+
 			printf("avg = %f\n", media);
 			sprintf(val, "%.2f", media);
 			strcpy(mess, "AU0");
 			if (media < 10) strcat(val, "0");
+
+			pthread_mutex_unlock(&mutex_media);
+
 			strcat(mess, val);
 			strcat(mess, "Z");
 			printf("mess = %s\n", mess);	
@@ -579,7 +591,7 @@ int mainClient() {
 			break;
 		default:
 			printf("invalid order\n");
-			strcpy(mess,"erreuuuur");
+			strcpy(mess,"fail");
 	}
 							
 
@@ -606,6 +618,8 @@ int main (int argc, char **argv) {
 
 	fd = ConfigurarSerie();
 
+	pthread_mutex_init(&mutex_media, NULL);
+
 	pthread_t th_Client;
 	pthread_create(&th_Client, NULL, mainClient, 0);
 	pthread_t th_Arduino;
@@ -615,5 +629,8 @@ int main (int argc, char **argv) {
 	pthread_join(th_Client, NULL);
 	
 	TancarSerie(fd);
+
+	pthread_mutex_destroy(&mutex_media); 
 	
+	return 0;
 }
