@@ -22,12 +22,11 @@
 #define SERVER_MAX_CONNECTIONS	4
 #define REQUEST_MSG_SIZE	1024 
 #define BAUDRATE B9600                                                
-//#define MODEMDEVICE "/dev/ttyS0"        //Conexió IGEP - Arduino
 #define MODEMDEVICE "/dev/ttyACM0"         //Conexió directa PC(Linux) - Arduino                                   
 #define _POSIX_SOURCE 1 /* POSIX compliant source */                       
                  
 
-/* variable generale */                                          
+/* variable generale for the threads */                                          
 struct termios oldtio,newtio;                                            
 double min = 99.0;
 double max = -9.0;
@@ -52,7 +51,6 @@ int	ConfigurarSerie(void)
 	tcgetattr(fd,&oldtio); /* save current port settings */                 
 
 	bzero(&newtio, sizeof(newtio));                                         
-	//newtio.c_cflag = BAUDRATE | CRTSCTS | CS8 | CLOCAL | CREAD;             
 	newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;             
 	newtio.c_iflag = IGNPAR;                                                
 	newtio.c_oflag = 0;                                                     
@@ -189,10 +187,10 @@ char* fonction (int fd, char ret[]){
 	return ret;
 }
 
+/* fonction that start the acquisition of temperature */
 void startAcquisition() {
 	char buf2[255];
 	char missatge[255];
-	//int fd;
 	int i;
 	int tiempo = atol(timechar);
 	int nbmeasures = atol(nbmeasureschar);
@@ -220,75 +218,31 @@ void startAcquisition() {
 
 
 	//read the message and store it in the buffer
-	/*strcpy(buf2,*/ fonction(fd, buf2);
-	//memset(buf,'\0',sizeof(buf));
+	fonction(fd, buf2);
 	printf("\n");
 
 }
-                                                                                 
+
+
+/* !!!!!!!!!!!!!!!!! thread for the arduino !!!!!!!!!!!!!!!!!!!!!!!!!! */                                                                      
 int mainArduino()                                                               
 {                                                                          
-	int /*fd,*/ i = 0/*, res*/;                                                           
+	int i = 0;                                                           
 	char buf[255];
 	char buf2[255];
 	char buf3[255];
 	char missatge[255];
-	//char timechar[2];
-	//char nbmeasureschar[2];
-	//int timetowait;
 	int bytes;
-	//int comptador = 0;
 
 	char subbuf[10];
 	chained_list* currentElem; //current elem of the list
 	chained_list* root; //start of the list
-	
-
-	/*printf("Enter time : ");
-	scanf("%s",timechar);
-	
-	int tiempo = atol(timechar);
-	
-	printf("Enter number of measures : ");
-	scanf("%s",nbmeasureschar);
-	int nbmeasures = atol(nbmeasureschar);
-	timetowait = tiempo * nbmeasures;
-	printf("%d \n", timetowait);
-	
-	
-	sprintf(missatge,"AM1");
-	strcat(missatge, timechar);
-	strcat(missatge, nbmeasureschar);
-	strcat(missatge,"Z");
-	
-	fd = ConfigurarSerie();
-	
-	res = write(fd,missatge,strlen(missatge));
-
-	if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
-
-	printf("Enviats %d bytes: ",res);
-	for (i = 0; i < res; i++)
-	{
-		printf("%c",missatge[i]);
-	}
-	printf("\n");
-
-	
-
-	//read the message and store it in the buffer
-	strcpy(buf2, fonction(fd, buf2));
-	memset(buf,'\0',sizeof(buf));
-	printf("\n");
-*/
-
 
 	//loop to get the temperature
 	while(1){
 		if(start == 1) {
 			printf("\n");
 			sleep(timetowait); //wait the number of second multiplied by the number of measures needed to do the average
-      		//float media;
       		sprintf(missatge,"ACZ");
 			res = write(fd,missatge,strlen(missatge)); 
 			if (res <0) {tcsetattr(fd,TCSANOW,&oldtio); perror(MODEMDEVICE); exit(-1); }
@@ -298,11 +252,10 @@ int mainArduino()
 			memcpy(subbuf, &buf3[3], 4); //to take the valor of the code V
       		subbuf[4] = '\0';
 
+      		//lock the mutex and change the valor of the media
       		pthread_mutex_lock(&mutex_media);
 
       		media = atof(subbuf);
-
-      		pthread_mutex_unlock(&mutex_media);
 
       		printf("\n");
       		printf("Media : %f \n",media ); //print the temperature
@@ -314,6 +267,8 @@ int mainArduino()
 			if (valeur < min) min = valeur;
 			printf("Min : %f\n",min);
 			printf("Max : %f\n",max);
+
+			pthread_mutex_unlock(&mutex_media); // unlock the mutex
 			
       		//create the list if none
       		//create the new elements and put them on the right place
@@ -334,7 +289,7 @@ int mainArduino()
 					addLast(root,valeur);
 					currentElem = currentElem->next;
 				}
-					comptador++;
+				comptador++;
 			//print the whole list
 			parsing(root);
 			}
@@ -343,9 +298,6 @@ int mainArduino()
 			//the counter of element in the list
 			printf("comptador : %d",comptador);
 			printf("\n");
-			//sleep(1);
-
-
 
 			sprintf(missatge,"AS131Z");
 			//turn the LED ON
@@ -403,10 +355,7 @@ int mainArduino()
 		else {
 			sleep(1);
 		}		
-	}
-                                                   
-	//TancarSerie(fd);
-	
+	}	
 	return 0;
 }
 
@@ -414,9 +363,7 @@ int mainArduino()
 
 
 
-/* !!!!!!!!!!!!!!!!!!!! partie du server pour le client !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-
+/* !!!!!!!!!!!!!!!!!!!! the thread for the client !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 int mainClient() {
 	struct sockaddr_in	serverAddr;
 	struct sockaddr_in	clientAddr;
@@ -427,10 +374,6 @@ int mainClient() {
 	int 		result;
 	char		buffer[256];
 	char		missatge[256];
-	//int tab[3600];
-	/*int counter = 0;
-	float maximum = -9999.0;
-	float minimum = -9999.0;*/
 	char acquisition[10] = "stop";
 
 	/*Preparar l'adreça local*/
@@ -464,15 +407,7 @@ int mainClient() {
 		printf("Message received from the client (bytes %d): %s\n",	result, buffer);
 		
 		/************************ Initialisation Array **********************/
-	//float tab[3600];
 	int i=0;
-	//time_t t;
-	//srand((unsigned) time(&t));
-	//counter = 0;
-	/*for(i=0; i<3600; i++){
-		tab[i] = (double)rand() / (double)RAND_MAX*30; //((float) rand()) / (float) 30;
-		counter++;
-	}*/
 	/********* HANDLE THE DATAS **************/
 
 	char* mess = malloc(10*sizeof(char));
@@ -480,7 +415,6 @@ int mainClient() {
 	acqu_state = "stop"; //initialisation
 		
 	char order = buffer[1];
-	//int n1, n2, n3, verif;
 	char val[4];
 	char subbuf[10];
 	char subbuf2[10];
@@ -491,6 +425,7 @@ int mainClient() {
 			memset(buffer, '\0', sizeof(buffer));
 			memset(missatge, '\0', sizeof(missatge));
 			
+			//lock the mutex
 			pthread_mutex_lock(&mutex_media);
 
 			printf("avg = %f\n", media);
@@ -498,6 +433,7 @@ int mainClient() {
 			strcpy(mess, "AU0");
 			if (media < 10) strcat(val, "0");
 
+			//unlock the mutex
 			pthread_mutex_unlock(&mutex_media);
 
 			strcat(mess, val);
@@ -555,18 +491,14 @@ int mainClient() {
 			/*start acqui*/
 			
 			//to get the differents datas from the message
-			
 			memcpy(subbuf, &buffer[2], 1);
 			subbuf[2] = '\0';
-			
 			
 			memcpy(timechar, &buffer[3], 2);
 			timechar[2] = '\0';
 			
-			
 			memcpy(nbmeasureschar, &buffer[5],2);
 			nbmeasureschar[1] = '\0';
-			
 			
 			printf("acquisition = %s\n", acquisition);
 
@@ -593,8 +525,6 @@ int mainClient() {
 			printf("invalid order\n");
 			strcpy(mess,"fail");
 	}
-							
-
 
 		/*Enviar*/
 		
@@ -612,24 +542,30 @@ int mainClient() {
 
 
 /* main complet */
-
-
 int main (int argc, char **argv) {
 
 	fd = ConfigurarSerie();
 
+	//the mutex to be sure that the media is not 
+	//modified while sending it to the client
 	pthread_mutex_init(&mutex_media, NULL);
 
+	//starting of the 2 threads
+	//one for communicating with the client
+	//one the the arduino
 	pthread_t th_Client;
 	pthread_create(&th_Client, NULL, mainClient, 0);
 	pthread_t th_Arduino;
 	pthread_create(&th_Arduino, NULL, mainArduino,0);
 
+	//stop the program the finish while the threads are running
 	pthread_join(th_Arduino, NULL);
 	pthread_join(th_Client, NULL);
 	
+	//close the communication
 	TancarSerie(fd);
 
+	//destroy the mutex
 	pthread_mutex_destroy(&mutex_media); 
 	
 	return 0;
